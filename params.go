@@ -16,10 +16,10 @@ type params struct {
 
 func (p *params) Map() *map[string]string {
 	m := map[string]string{
-		"channel":   p.channel,
-		"username":  p.username,
-		"iconEmoji": p.iconEmoji,
-		"iconURL":   p.iconEmoji,
+		"channel":    p.channel,
+		"username":   p.username,
+		"icon_emoji": p.iconEmoji,
+		"icon_url":   p.iconURL,
 	}
 
 	for k, v := range m {

@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
-	webhooksUrl = kingpin.Flag("webhooks", "Incoming webhooks URL").Short('w').Required().URL()
+	webhooksURL = kingpin.Flag("webhooks", "Incoming webhooks URL").Short('w').Required().URL()
 	text        = kingpin.Arg("text", "A message text or JSON string.").Required().String()
 
 	channel   = kingpin.Flag("channel", "Channel").Short('c').String()
@@ -32,14 +33,26 @@ func main() {
 		iconURL:   iconURLString,
 	}
 
-	json, err := createJSONParameter(*text, p)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
+	var jsonMap string
+	var err error
+
+	if *isJSON {
+		jsonMap, err = overwriteJSONParameter(*text, p)
+	} else {
+		jsonMap, err = createJSONParameter(*text, p)
 	}
 
-	err = post((*webhooksUrl).String(), json)
 	if err != nil {
-		fmt.Println(err.Error())
+		outError(err)
 	}
+
+	err = post((*webhooksURL).String(), jsonMap)
+	if err != nil {
+		outError(err)
+	}
+}
+
+func outError(err error) {
+	fmt.Fprintln(os.Stderr, err)
+	os.Exit(1)
 }

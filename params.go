@@ -2,57 +2,74 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
+
+	"github.com/golang/golang/go/src/fmt"
 )
 
 type params struct {
-	text      string
 	channel   string
 	username  string
 	iconEmoji string
 	iconURL   string
 }
 
-func (p *params) CreateMap() *map[string]string {
-	m := make(map[string]string)
+func (p *params) Map() *map[string]string {
+	m := map[string]string{
+		"channel":   p.channel,
+		"username":  p.username,
+		"iconEmoji": p.iconEmoji,
+		"iconURL":   p.iconEmoji,
+	}
 
-	m["text"] = p.text
-
-	if p.channel != "" {
-		m["channel"] = p.channel
-	}
-	if p.username != "" {
-		m["username"] = p.username
-	}
-	if p.iconEmoji != "" {
-		m["icon_emoji"] = p.iconEmoji
-	}
-	if p.iconURL != "" {
-		m["icon_url"] = p.iconURL
+	for k, v := range m {
+		if v == "" {
+			delete(m, k)
+		}
 	}
 
 	return &m
 }
 
 func createJSONParameter(text string, p *params) (string, error) {
-	p.text = text
-	b, err := json.Marshal(p.CreateMap())
+	mapData := p.Map()
+	(*mapData)["text"] = text
+	fmt.Println(mapData)
+
+	return convertJSONString(mapData)
+}
+
+func overwriteJSONParameter(jsonStr string, p *params) (string, error) {
+	var data interface{}
+	dec := json.NewDecoder(strings.NewReader(jsonStr))
+	err := dec.Decode(&data)
+	if err != nil {
+		return "", err
+	}
+
+	var mapData map[string]interface{}
+
+	switch data.(type) {
+	case map[string]interface{}:
+		mapData = data.(map[string]interface{})
+	default:
+		return "", fmt.Errorf("Invalid JSON format.")
+	}
+
+	for k, v := range *(p.Map()) {
+		if v != "" {
+			mapData[k] = v
+		}
+	}
+
+	return convertJSONString(mapData)
+}
+
+func convertJSONString(v interface{}) (string, error) {
+	b, err := json.Marshal(v)
 	if err != nil {
 		return "", err
 	}
 
 	return string(b), nil
 }
-
-/*
-func overwriteJSONParameter(json string, p *params) (string, error) {
-	p.text = text
-	m := p.CreateMap()
-
-	b, err := json.Marshal(m)
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
-}
-*/

@@ -34,7 +34,6 @@ func (p *params) Map() *map[string]string {
 func createJSONParameter(text string, p *params) (string, error) {
 	mapData := p.Map()
 	(*mapData)["text"] = text
-	fmt.Println(mapData)
 
 	return convertJSONString(mapData)
 }

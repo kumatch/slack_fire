@@ -2,9 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
-
-	"github.com/golang/golang/go/src/fmt"
 )
 
 type params struct {

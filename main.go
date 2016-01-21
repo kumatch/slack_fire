@@ -9,13 +9,14 @@ import (
 
 var (
 	webhooksURL = kingpin.Flag("webhooks", "Incoming webhooks URL").Short('w').Required().URL()
-	text        = kingpin.Arg("text", "A message text or JSON string.").Required().String()
 
+	text      = kingpin.Arg("text", "A message text or JSON string.").String()
 	channel   = kingpin.Flag("channel", "Channel").Short('c').String()
 	username  = kingpin.Flag("username", "Username").Short('u').String()
 	iconEmoji = kingpin.Flag("icon-emoji", "Slack ICON Emoji").Short('e').String()
 	iconURL   = kingpin.Flag("icon-url", "URL of an ICON image").Short('i').URL()
-	isJSON    = kingpin.Flag("json", "The argument is JSON string").Short('j').Bool()
+
+	streamMode = kingpin.Flag("stream", "Stream mode (use stdin for JSON input)").Short('S').Bool()
 )
 
 func main() {
@@ -26,27 +27,41 @@ func main() {
 		iconURLString = (*iconURL).String()
 	}
 
-	p := &params{
-		channel:   *channel,
-		username:  *username,
-		iconEmoji: *iconEmoji,
-		iconURL:   iconURLString,
-	}
+	url := (*webhooksURL).String()
 
-	var jsonMap string
-	var err error
-
-	if *isJSON {
-		jsonMap, err = overwriteJSONParameter(*text, p)
+	if *streamMode {
+		runStreamMode(url)
 	} else {
-		jsonMap, err = createJSONParameter(*text, p)
-	}
+		if *text == "" {
+			outError(fmt.Errorf("A message is blank, stopped."))
+			return
+		}
 
+		p := &params{
+			channel:   *channel,
+			username:  *username,
+			iconEmoji: *iconEmoji,
+			iconURL:   iconURLString,
+		}
+
+		runArgsMode(url, *text, p)
+	}
+}
+
+func runStreamMode(url string) {
+	err := postStream(url, os.Stdin)
+	if err != nil {
+		outError(err)
+	}
+}
+
+func runArgsMode(url, text string, p *params) {
+	jsonString, err := createJSONParameter(text, p)
 	if err != nil {
 		outError(err)
 	}
 
-	err = post((*webhooksURL).String(), jsonMap)
+	err = post(url, jsonString)
 	if err != nil {
 		outError(err)
 	}

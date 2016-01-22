@@ -3,65 +3,37 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"gopkg.in/alecthomas/kingpin.v2"
-)
-
-var (
-	webhooksURL = kingpin.Flag("webhooks", "Incoming webhooks URL").Short('w').Required().URL()
-
-	text      = kingpin.Arg("text", "A message text or JSON string.").String()
-	channel   = kingpin.Flag("channel", "Channel").Short('c').String()
-	username  = kingpin.Flag("username", "Username").Short('u').String()
-	iconEmoji = kingpin.Flag("icon-emoji", "Slack ICON Emoji").Short('e').String()
-	iconURL   = kingpin.Flag("icon-url", "URL of an ICON image").Short('i').URL()
-
-	streamMode = kingpin.Flag("stream", "Stream mode (use stdin for JSON input)").Short('S').Bool()
 )
 
 func main() {
-	kingpin.Parse()
+	args := parseArguments()
 
-	var iconURLString string
-	if (*iconURL) != nil {
-		iconURLString = (*iconURL).String()
-	}
-
-	url := (*webhooksURL).String()
-
-	if *streamMode {
-		runStreamMode(url)
+	if args.IsStream {
+		runStreamMode(args)
 	} else {
-		if *text == "" {
-			outError(fmt.Errorf("A message is blank, stopped."))
-			return
-		}
-
-		p := &params{
-			channel:   *channel,
-			username:  *username,
-			iconEmoji: *iconEmoji,
-			iconURL:   iconURLString,
-		}
-
-		runArgsMode(url, *text, p)
+		runArgsMode(args)
 	}
 }
 
-func runStreamMode(url string) {
-	err := postStream(url, os.Stdin)
+func runStreamMode(args *Arguments) {
+	err := postStream(args.WebHooksURL, os.Stdin)
 	if err != nil {
 		outError(err)
 	}
 }
 
-func runArgsMode(url, text string, p *params) {
-	jsonString, err := createJSONParameter(text, p)
+func runArgsMode(args *Arguments) {
+	if args.Text == "" {
+		outError(fmt.Errorf("A message is blank, stopped."))
+		return
+	}
+
+	jsonString, err := args.CreateJSON()
 	if err != nil {
 		outError(err)
 	}
 
-	err = post(url, jsonString)
+	err = postJSON(args.WebHooksURL, jsonString)
 	if err != nil {
 		outError(err)
 	}

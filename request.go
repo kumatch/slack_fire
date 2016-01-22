@@ -12,7 +12,7 @@ const (
 	contentType = "application/json"
 )
 
-func post(url, json string) error {
+func postJSON(url, json string) error {
 	resp, err := http.Post(url, contentType, strings.NewReader(json))
 	if err != nil {
 		return err
